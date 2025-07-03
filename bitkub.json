@@ -1,0 +1,122 @@
+{
+  "name": "bitkub-buy-limit",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "id": "2a0336ee-4f3a-4e3f-9efb-8cbb2b4f1134",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://api.bitkub.com/api/v3/servertime",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "id": "83a49aee-226e-463e-9a13-e4ad2b58b8f3",
+      "name": "HTTP Request - get timestamp"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ts = $input.first().json\nconst method = \"POST\";\nconst path = \"/api/v3/market/place-bid\";\nconst query = \"\";\nconst body = JSON.stringify({\n  \"sym\": \"ETH_THB\",\n  \"amt\": 20,\n  \"rat\": 80000,\n  \"typ\": \"limit\"\n})\n\nreturn [{\n  json: {\n    ts,\n    apiKey: \"<your_api_key_here>\",\n    apiSecret: \"<your_api_secret_here>\",\n    payload: `${ts}${method}${path}${query}${body}`\n  }\n}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0],
+      "id": "805ce084-a1e4-41ef-8655-6ddb058feb5d",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ $json.payload }}",
+        "dataPropertyName": "signature",
+        "secret": "={{ $json.apiSecret }}"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [660, 0],
+      "id": "5d942de4-3eba-487a-ae1c-d5d71205eb37",
+      "name": "Crypto"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.bitkub.com/api/v3/market/place-bid",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"Accept\": \"application/json\",\n  \"Content-Type\": \"application/json\",\n  \"X-BTK-APIKEY\": \"{{ $json.apiKey }}\",\n  \"X-BTK-TIMESTAMP\": \"{{ $json.ts }}\",\n  \"X-BTK-SIGN\": \"{{ $json.signature }}\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"sym\": \"ETH_THB\",\n  \"amt\": 20,\n  \"rat\": 80000,\n  \"typ\": \"limit\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 0],
+      "id": "d6497cf2-6247-44f2-af41-e012f9171b8c",
+      "name": "HTTP Request"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - get timestamp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - get timestamp": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Crypto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crypto": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9fea148c-0bf9-4e3a-a9b1-f27bcdc707d0",
+  "meta": {
+    "instanceId": "47106690c7c01cdc0ce5199a63d2256858945aac835aadbed6b3f95210b42a54"
+  },
+  "id": "60PdcvNYc9lbTB4z",
+  "tags": []
+}
